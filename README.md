@@ -4,7 +4,7 @@
 
 ### Statistics on collected metrics — [github.io/shri-performance/stats](https://xaazias.github.io/shri-performance/stats.html)
 
-**List of Metrics:**
+List of Metrics:
 - `OS`
 - `BROWSER`
 - `PLATFORM`
