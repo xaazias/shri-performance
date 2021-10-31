@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Random Quote</title>
+    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <section class="container">
+      <h1>Random Quote</h1>
+      <div class="quote-container">
+        <p class="quote">Quote</p>
+        <h4 class="author">Author</h4>
+      </div>
+      <button class="get-quote-btn">Get another quote</button>
+    </section>
+    <script src="assets/send.js"></script>
+    <script>
+      const ID = "B4C9FE04-6840-4215-A643-37A201055AF8"
+      const userAgent = navigator.userAgent
+
+      /** BROWSER */
+      const getUserBrowser = () => {
+        if (userAgent.indexOf("Firefox") > -1) return "Mozilla Firefox"
+        if (userAgent.indexOf("Opera") > -1) return "Opera"
+        if (userAgent.indexOf("Trident") > -1) return "Internet Explorer"
+        if (userAgent.indexOf("Edge") > -1) return "Microsoft Edge"
+        if (userAgent.indexOf("Chrome") > -1) return "Google Chrome / Chromium"
+        if (userAgent.indexOf("Safari") > -1) return "Apple Safari"
+
+        return "Unknown"
+      }
+
+      /** OS */
+      const getUserOS = () => {
+        if (userAgent.indexOf("Windows NT 10.0") != -1) return "Windows 10"
+        if (userAgent.indexOf("Windows NT 6.3") != -1) return "Windows 8.1"
+        if (userAgent.indexOf("Windows NT 6.2") != -1) return "Windows 8"
+        if (userAgent.indexOf("Windows NT 6.1") != -1) return "Windows 7"
+        if (userAgent.indexOf("Windows NT 6.0") != -1) return "Windows Vista"
+        if (userAgent.indexOf("Windows NT 5.1") != -1) return "Windows XP"
+        if (userAgent.indexOf("Windows NT 5.0") != -1) return "Windows 2000"
+        if (userAgent.indexOf("Mac") != -1) return "Mac/iOS"
+        if (userAgent.indexOf("X11") != -1) return "UNIX"
+        if (userAgent.indexOf("Linux") != -1) return "Linux"
+
+        return "Unknown"
+      }
+
+      /** PLATFORM (DESKTOP / MOBILE) */
+      const getUserPlatform = () => {
+        const isMobile =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            userAgent
+          )
+        return isMobile ? "touch" : "desktop"
+      }
+
+      let counter = new Counter()
+      const timing = performance.timing
+
+      counter.init(ID, String(Math.random()).substr(2, 12), "metrics")
+      
+      counter.setAdditionalParams({
+        env: "production",
+        platform: getUserPlatform(),
+        browser: getUserBrowser(),
+        os: getUserOS()
+      })
+
+      /** CONNECT */
+      counter.send("connect", timing.connectEnd - timing.connectStart)
+
+      /** TTFB */
+      counter.send("ttfb", timing.responseEnd - timing.requestStart)
+
+      /** FCP */
+      new PerformanceObserver((entryList) => {
+        for (const entry of entryList.getEntriesByName(
+          "first-contentful-paint"
+        )) {
+          counter.send("fcp", entry.startTime)
+        }
+      }).observe({ type: "paint", buffered: true })
+
+      /** LCP */
+      new PerformanceObserver((entryList) => {
+        for (const entry of entryList.getEntries()) {
+          counter.send("lcp", entry.startTime)
+        }
+      }).observe({ type: "largest-contentful-paint", buffered: true })
+
+      /** FID */
+      new PerformanceObserver((entryList) => {
+        for (const entry of entryList.getEntries()) {
+          counter.send("fid", entry.processingStart - entry.startTime)
+        }
+      }).observe({ type: "first-input", buffered: true })
+
+      /***/
+
+      const quoteContainer = document.querySelector(".quote-container")
+      const quote = document.querySelector(".quote")
+      const author = document.querySelector(".author")
+
+      const getQuoteButton = document.querySelector(".get-quote-btn")
+
+      const fetchQuote = () => {
+        let loadStart = Date.now()
+
+        fetch("https://api.quotable.io/random")
+          .then((response) => {
+            return response.json()
+          })
+          .then((data) => {
+            /** LOAD */
+            counter.send("load", Date.now() - loadStart)
+
+            let drawStart = Date.now()
+
+            quote.innerHTML = `«${data.content}»`
+            author.innerHTML = data.author
+
+            quoteContainer.style.display = "initial"
+
+            /** DRAW */
+            requestAnimationFrame(() => {
+              counter.send("draw", Date.now() - drawStart)
+            })
+          })
+      }
+
+      /***/
+
+      getQuoteButton.addEventListener("click", () => fetchQuote())
+      document.addEventListener("DOMContentLoaded", () => fetchQuote())
+    </script>
+  </body>
+</html>
